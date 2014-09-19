@@ -341,21 +341,46 @@ def render_game(stdscr):
 
     stdscr.clear()
 
-    prompt_window = stdscr.derwin(1, 80, 23, 0)
-    text_window = stdscr.derwin(1, 80, 24, 0)
-
     deck1 = load_deck(sys.argv[1])
     deck2 = load_deck(sys.argv[2])
-    game = Game([deck1, deck2], [TextAgent(stdscr, prompt_window, text_window), RandomAgent()])
-    if isinstance(game.players[0].agent, TextAgent):
-        renderer = GameRender(stdscr, game, game.players[0])
-    else:
-        renderer = GameRender(stdscr, game, game.players[1])
+    game = Game([deck1, deck2], [RandomAgent(), RandomAgent()])
     game.start()
+    print(game)
+    print("hello")
 
+def game_winner(game):
+    for player in game.players:
+        if player.hero.health <= 0:
+            return player.agent.name
+
+    raise
+
+def run_game():
+    deck1 = load_deck(sys.argv[1])
+    deck2 = load_deck(sys.argv[2])
+    game = Game([deck1, deck2], [RandomAgent("Deck 1"), RandomAgent("Deck 2")])
+    game.start()
+    return game_winner(game)
+    
+
+def run_games(num_games):
+    res = dict()
+    for i in range(0,num_games):
+        winner = run_game()
+        res[winner] = res.get(winner,0) + 1
+
+        if i > 0 and i%25 == 24 and i < (num_games-1):
+            print(res)
+    
+    print(res)
 
 if __name__ == "__main__":
     if len(sys.argv) < 3:
         print_usage()
         sys.exit()
-    curses.wrapper(render_game)
+
+    num_games = 1
+    if len(sys.argv) >= 4:
+        num_games = int(sys.argv[3])
+
+    run_games(num_games)
