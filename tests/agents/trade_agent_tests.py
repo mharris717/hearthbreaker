@@ -8,7 +8,7 @@ from hearthbreaker.cards import GoldshireFootman, MurlocRaider, BloodfenRaptor, 
     VoidWalker, HarvestGolem, KnifeJuggler, ShatteredSunCleric, ArgentSquire, Doomguard, Soulfire, DefenderOfArgus, \
     AbusiveSergeant, NerubianEgg, KeeperOfTheGrove, Wisp, Deathwing
 from hearthbreaker.constants import CHARACTER_CLASS
-from hearthbreaker.game_objects import Deck, Game, TheCoin
+from hearthbreaker.game_objects import Deck, Game, TheCoin, Hero
 from hearthbreaker.test_helpers import TestHelpers
 from hearthbreaker.deck_order import DeckOrder
 from hearthbreaker.agents.trade.trade import Trades
@@ -263,7 +263,7 @@ class TestTradeAgent(unittest.TestCase):
         trades = self.make_trades(me,opp)
 
         self.assertEqual(len(trades.trades()),2)
-        self.assertEqual(trades.trades()[0].opp_minion.name,"Hero")
+        self.assertEqual(trades.trades()[0].opp_minion.__class__,Hero)
 
     def test_coin(self):
         cards = [ArgentSquire(),BloodfenRaptor(),TheCoin()]

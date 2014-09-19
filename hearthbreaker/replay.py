@@ -468,7 +468,6 @@ class SavedGame(hearthbreaker.game_objects.Game):
                 self.next_target = None
                 self.next_index = -1
                 self.next_option = None
-                self.name = None
 
             def do_card_check(self, cards):
                 nonlocal k_index

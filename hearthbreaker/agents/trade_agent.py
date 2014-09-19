@@ -1,6 +1,7 @@
 from hearthbreaker.agents.basic_agents import RandomAgent
 from hearthbreaker.agents.trade.possible_play import PossiblePlays,PlayMixin
 from hearthbreaker.agents.trade.trade import Trade,TradeMixin,AttackMixin
+from hearthbreaker.game_objects import Hero
 
 class ChooseTargetMixin:
     def gdfgdfggdfgdf(self):
@@ -28,7 +29,7 @@ class ChooseTargetMixin:
         for minion in player.opponent.minions:
             if minion == target: return "Opponent"
 
-        if target.name == "Hero": return "Hero"
+        if target.__class__ == Hero: return "Hero"
 
         raise Exception("No Owner of {}".format(target.name))
 
