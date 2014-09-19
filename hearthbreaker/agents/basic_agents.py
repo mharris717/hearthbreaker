@@ -22,6 +22,7 @@ class DoNothingBot:
     def choose_option(self, *options):
         return options[0]
 
+
 class PredictableBot:
     def do_card_check(self, cards):
         return [True, True, True, True]
@@ -85,7 +86,6 @@ class RandomAgent(DoNothingBot):
                 return
 
     def choose_target(self, targets):
-        #print('Targets Size: {}'.format(len(targets)))
         return targets[random.randint(0, len(targets) - 1)]
 
     def choose_index(self, card, player):
