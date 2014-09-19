@@ -8,9 +8,11 @@ from hearthbreaker.cards import GoldshireFootman, MurlocRaider, BloodfenRaptor, 
     VoidWalker, HarvestGolem, KnifeJuggler, ShatteredSunCleric, ArgentSquire, Doomguard, Soulfire, DefenderOfArgus, \
     AbusiveSergeant, NerubianEgg, KeeperOfTheGrove, Wisp, Deathwing
 from hearthbreaker.constants import CHARACTER_CLASS
-from hearthbreaker.game_objects import Deck, Game
+from hearthbreaker.game_objects import Deck, Game, TheCoin
 from hearthbreaker.test_helpers import TestHelpers
 from hearthbreaker.deck_order import DeckOrder
+from hearthbreaker.agents.trade.trade import Trades
+from hearthbreaker.agents.trade.possible_play import PossiblePlays
 
 class TestTradeAgent(unittest.TestCase):
 
@@ -27,6 +29,10 @@ class TestTradeAgent(unittest.TestCase):
             for minion in player.minions:
                 minion.active = True
                 minion.exhausted = False
+
+    def assert_minions(self,player,*names):
+        actual = [m.name for m in player.minions]
+        self.assertEqual(sorted(actual),sorted(names))
 
     def test_setup_smoke(self):
         game = TestHelpers().make_game()
@@ -56,15 +62,14 @@ class TestTradeAgent(unittest.TestCase):
     def test_basic_trade(self):
         game = TestHelpers().make_game()
 
-        self.add_minions(game,0,Wisp(),WarGolem())
-        self.add_minions(game,1,BloodfenRaptor())
+        self.add_minions(game,1,Wisp(),WarGolem())
+        self.add_minions(game,0,BloodfenRaptor())
 
         self.make_all_active(game)
-        game.current_player = game.players[0]
         game.play_single_turn()
 
-        self.assert_minions(game.players[0],"War Golem")
-        self.assert_minions(game.players[1],"Bloodfen Raptor")
+        self.assert_minions(game.players[1],"War Golem")
+        self.assert_minions(game.players[0],"Bloodfen Raptor")
 
     
 
@@ -77,7 +82,7 @@ class TestTradeAgent(unittest.TestCase):
     def test_draw_setup(self):
         game = TestHelpers().make_game()
 
-        player = game.players[1]
+        player = game.players[0]
         cards = DeckOrder("Argent Squire","Doomguard","Dire Wolf Alpha","Argent Squire").sorted(player.deck.cards)
         self.assertEqual(cards[0].name,"Argent Squire")
         self.assertEqual(cards[1].name,"Doomguard")
@@ -95,134 +100,186 @@ class TestTradeAgent(unittest.TestCase):
                 player.deck.cards = cards
 
         game = TestHelpers().make_game(cb)
-        game.current_player = game.players[0]
-        game.play_single_turn()
 
-        self.assert_minions(game.players[1],"Argent Squire")
+        self.assertEqual(game.players[0].agent.name,"TRAD")
 
         game.play_single_turn()
+
+        names = [m.name for m in game.players[0].hand]
+        #print(names)
+        self.assert_minions(game.players[0],"Argent Squire")
+
+        game.play_single_turn()
         game.play_single_turn()
 
-        self.assert_minions(game.players[1],"Argent Squire","Dire Wolf Alpha")
+        self.assert_minions(game.players[0],"Argent Squire","Dire Wolf Alpha")
 
     def test_will_play_biggest(self):
         game = TestHelpers().make_game()
 
-        game.players[1].hand = [ArgentSquire(),ArgentSquire(),DireWolfAlpha()]
-        game.players[1].mana = 1
-        game.players[1].max_mana = 1
+        game.players[0].hand = [ArgentSquire(),ArgentSquire(),DireWolfAlpha()]
+        game.players[0].mana = 1
+        game.players[0].max_mana = 1
 
-        game.current_player = game.players[0]
         game.play_single_turn()
 
-        self.assert_minions(game.players[1],"Dire Wolf Alpha")
+        self.assert_minions(game.players[0],"Dire Wolf Alpha")
 
     def test_will_play_multiple(self):
         game = TestHelpers().make_game()
 
-        game.players[1].hand = [ArgentSquire(),ArgentSquire(),ArgentSquire()]
-        game.players[1].mana = 1
-        game.players[1].max_mana = 1
+        game.players[0].hand = [ArgentSquire(),ArgentSquire(),ArgentSquire()]
+        game.players[0].mana = 1
+        game.players[0].max_mana = 1
 
-        game.current_player = game.players[0]
         game.play_single_turn()
 
-        self.assert_minions(game.players[1],"Argent Squire","Argent Squire")
+        self.assert_minions(game.players[0],"Argent Squire","Argent Squire")
 
     def test_will_play_multiple_correct_order(self):
         game = TestHelpers().make_game()
 
-        game.players[1].hand = [ArgentSquire(),ArgentSquire(),ArgentSquire(),HarvestGolem()]
-        game.players[1].mana = 3
-        game.players[1].max_mana = 3
+        game.players[0].hand = [ArgentSquire(),ArgentSquire(),ArgentSquire(),HarvestGolem()]
+        game.players[0].mana = 3
+        game.players[0].max_mana = 3
 
-        game.current_player = game.players[0]
         game.play_single_turn()
 
-        self.assert_minions(game.players[1],"Harvest Golem","Argent Squire")
+        self.assert_minions(game.players[0],"Harvest Golem","Argent Squire")
 
     def test_will_use_entire_pool(self):
         game = TestHelpers().make_game()
 
-        game.players[1].hand = [DireWolfAlpha(),DireWolfAlpha(),DireWolfAlpha(),HarvestGolem()]
-        game.players[1].mana = 3
-        game.players[1].max_mana = 3
+        game.players[0].hand = [DireWolfAlpha(),DireWolfAlpha(),DireWolfAlpha(),HarvestGolem()]
+        game.players[0].mana = 3
+        game.players[0].max_mana = 3
 
-        game.current_player = game.players[0]
         game.play_single_turn()
 
-        self.assert_minions(game.players[1],"Dire Wolf Alpha","Dire Wolf Alpha")
+        self.assert_minions(game.players[0],"Dire Wolf Alpha","Dire Wolf Alpha")
 
     def test_will_attack_face(self):
         game = TestHelpers().make_game()
 
-        self.add_minions(game,1,BloodfenRaptor())
+        self.add_minions(game,0,BloodfenRaptor())
 
         self.make_all_active(game)
-        game.current_player = game.players[0]
         game.play_single_turn()
 
-        self.assert_minions(game.players[0])
-        self.assert_minions(game.players[1],"Bloodfen Raptor")
+        self.assert_minions(game.players[1])
+        self.assert_minions(game.players[0],"Bloodfen Raptor")
 
-        self.assertEqual(27,game.players[0].hero.health)
+        self.assertEqual(27,game.players[1].hero.health)
 
     def test_will_attack_minion_and_face(self):
         game = TestHelpers().make_game()
 
-        self.add_minions(game,0,Wisp())
-        self.add_minions(game,1,BloodfenRaptor(),RiverCrocolisk())
+        self.add_minions(game,1,Wisp())
+        self.add_minions(game,0,BloodfenRaptor(),RiverCrocolisk())
 
         self.make_all_active(game)
-        game.current_player = game.players[0]
         game.play_single_turn()
 
-        self.assert_minions(game.players[0])
-        self.assert_minions(game.players[1],"Bloodfen Raptor","River Crocolisk")
+        self.assert_minions(game.players[1])
+        self.assert_minions(game.players[0],"Bloodfen Raptor","River Crocolisk")
 
-        self.assertEqual(28,game.players[0].hero.health)
+        self.assertEqual(27,game.players[1].hero.health)
 
     def test_will_respect_taunt(self):
         game = TestHelpers().make_game()
 
-        self.add_minions(game,0,Wisp(),GoldshireFootman())
-        self.add_minions(game,1,BloodfenRaptor())
+        self.add_minions(game,1,Wisp(),GoldshireFootman())
+        self.add_minions(game,0,BloodfenRaptor())
 
         self.make_all_active(game)
-        game.current_player = game.players[0]
         game.play_single_turn()
 
-        self.assert_minions(game.players[0],"Wisp")
-        self.assert_minions(game.players[1],"Bloodfen Raptor")
+        self.assert_minions(game.players[1],"Wisp")
+        self.assert_minions(game.players[0],"Bloodfen Raptor")
 
     def test_will_attack_twice(self):
         game = TestHelpers().make_game()
 
-        self.add_minions(game,0,Wisp(),GoldshireFootman())
-        self.add_minions(game,1,BloodfenRaptor(),RiverCrocolisk())
+        self.add_minions(game,1,Wisp(),GoldshireFootman())
+        self.add_minions(game,0,BloodfenRaptor(),RiverCrocolisk())
 
         self.make_all_active(game)
-        game.current_player = game.players[0]
         game.play_single_turn()
 
-        self.assert_minions(game.players[0])
-        self.assert_minions(game.players[1],"Bloodfen Raptor","River Crocolisk")
+        self.assert_minions(game.players[1])
+        self.assert_minions(game.players[0],"Bloodfen Raptor","River Crocolisk")
 
     def test_buff_target(self):
         game = TestHelpers().make_game()
 
-        self.add_minions(game,1,BloodfenRaptor(),RiverCrocolisk())
+        self.add_minions(game,0,BloodfenRaptor(),RiverCrocolisk())
         self.make_all_active(game)
-        self.add_minions(game,1,AbusiveSergeant())
+        self.add_minions(game,0,AbusiveSergeant())
 
-        game.current_player = game.players[0]
         game.play_single_turn()
 
-        self.assertEqual(25,game.players[0].hero.health)
+        #self.assertEqual(25,game.players[1].hero.health)
 
-    def assert_minions(self,player,*names):
-        actual = [m.name for m in player.minions]
-        self.assertEqual(sorted(actual),sorted(names))
+    def make_trades(self,me,opp):
+        me = [m for m in map(lambda c: c.create_minion_named(None),me)]
+        opp = [m for m in map(lambda c: c.create_minion_named(None),opp)]
+
+        game = TestHelpers().make_game()
+        trades = Trades(game.players[0],me,opp,game.players[1].hero)
+
+        return trades
+
+    def test_trades_obj_smoke(self):
+        me = [BloodfenRaptor(),RiverCrocolisk()]
+        opp = [Wisp(),WarGolem()]
+
+        trades = self.make_trades(me,opp)
+
+        self.assertEqual(len(trades.trades()),6)
+
+    def test_trades_smart(self):
+        me = [MagmaRager()]
+        opp = [Wisp(),ChillwindYeti()]
+
+        trades = self.make_trades(me,opp)
+        #for t in trades.trades(): print(t)
+
+        self.assertEqual(len(trades.trades()),3)
+        self.assertEqual(trades.trades()[0].opp_minion.name,"Chillwind Yeti")
+
+    def test_trades_smart2(self):
+        me = [VoidWalker()]
+        opp = [Wisp(),ChillwindYeti()]
+
+        trades = self.make_trades(me,opp)
+
+        self.assertEqual(len(trades.trades()),3)
+        self.assertEqual(trades.trades()[0].opp_minion.name,"Wisp")
+
+    def test_trades_smart3(self):
+        me = [VoidWalker()]
+        opp = [ChillwindYeti()]
+
+        trades = self.make_trades(me,opp)
+
+        self.assertEqual(len(trades.trades()),2)
+        self.assertEqual(trades.trades()[0].opp_minion.name,"Hero")
+
+    if False:
+        def test_coin(self):
+            cards = [ArgentSquire(),BloodfenRaptor(),TheCoin()]
+            possible_plays = PossiblePlays(cards,1)
+            play = possible_plays.plays()[0]
+            names = [c.name for c in play.cards]
+            self.assertEqual(names,["The Coin","Bloodfen Raptor"])
+
+        def test_coin_save(self):
+            cards = [ArgentSquire(),MagmaRager(),TheCoin()]
+            possible_plays = PossiblePlays(cards,1)
+            play = possible_plays.plays()[0]
+            names = [c.name for c in play.cards]
+            self.assertEqual(names,["Argent Squire"])
+
 
 
 

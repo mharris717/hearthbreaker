@@ -15,3 +15,8 @@ class Util:
               res[k] = obj
 
       return res.values()
+
+  @staticmethod
+  def print(str):
+    #print(str)
+    None

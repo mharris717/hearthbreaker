@@ -87,7 +87,21 @@ class TestHelpers:
         if not before_draw_callback:
             before_draw_callback = self.cb
 
-        game = Game([deck1, deck2], [RandomAgent(), TradeAgent()], before_draw_callback=before_draw_callback)
+        trade = TradeAgent()
+        trade.name = "TRAD"
+
+        r = RandomAgent()
+        r.name = "RAND"
+
+        def rand_func(a,b): return 0
+
+        game = Game([deck2, deck1], [trade, r], before_draw_callback=before_draw_callback)
+
+        #print("PLAYERS")
+        #for i in range(0,2):
+        #    print("Player {}: {}".format(i,game.players[i].agent.name))
             
         game.pre_game()
+        game.current_player = game.players[1]
+
         return game

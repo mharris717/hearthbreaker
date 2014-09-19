@@ -8,6 +8,7 @@ from hearthbreaker.cards import *
 from hearthbreaker.constants import CHARACTER_CLASS
 from hearthbreaker.game_objects import Game, card_lookup, Deck
 from hearthbreaker.ui.game_printer import GameRender
+from hearthbreaker.agents.trade_agent import TradeAgent
 
 
 def load_deck(filename):
@@ -349,27 +350,35 @@ def render_game(stdscr):
     print("hello")
 
 def game_winner(game):
-    for player in game.players:
-        if player.hero.health <= 0:
-            return player.agent.name
+    res = []
 
-    raise
+    for player in game.players:
+        if player.hero.health > 0:
+            res.append(player.agent.name)
+
+    if len(res) != 1:
+      raise Exception("no winner")
+
+    return res[0]
 
 def run_game():
     deck1 = load_deck(sys.argv[1])
     deck2 = load_deck(sys.argv[2])
-    game = Game([deck1, deck2], [RandomAgent("Deck 1"), RandomAgent("Deck 2")])
+    game = Game([deck1, deck2], [TradeAgent("TRAD"), RandomAgent("RAND")])
     game.start()
     return game_winner(game)
     
 
 def run_games(num_games):
     res = dict()
+
+    thresh = 100
+
     for i in range(0,num_games):
         winner = run_game()
         res[winner] = res.get(winner,0) + 1
 
-        if i > 0 and i%25 == 24 and i < (num_games-1):
+        if i > 0 and i%thresh == (thresh-1) and i < (num_games-1):
             print(res)
     
     print(res)
@@ -384,3 +393,7 @@ if __name__ == "__main__":
         num_games = int(sys.argv[3])
 
     run_games(num_games)
+
+# {'Trade': 806, 'Random': 4194}
+# {'Trade': 799, 'Random': 4201}
+# {'Random': 4162, 'Trade': 838}

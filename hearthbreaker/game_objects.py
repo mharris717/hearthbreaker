@@ -5,6 +5,7 @@ import abc
 import hearthbreaker.powers
 import hearthbreaker.targeting
 import hearthbreaker.constants
+from hearthbreaker.util import Util
 
 card_table = {}
 
@@ -298,6 +299,7 @@ class Character(Bindable, metaclass=abc.ABCMeta):
 
         self.player.trigger("pre_attack", self)
         target = self.choose_target(targets)
+        Util.print("{} Attack {} -> {}".format(self.player.agent.name,self.name,target.name))
         self.player.trigger("attack", self, target)
         self.trigger("attack", target)
         target.trigger("attacked", self)
@@ -829,6 +831,11 @@ class MinionCard(Card, metaclass=abc.ABCMeta):
         """
         return False
 
+    def create_minion_named(self,player):
+        res = self.create_minion(player)
+        res.name = self.name
+        return res
+
 
 class SecretCard(Card, metaclass=abc.ABCMeta):
     def __init__(self, name, mana, character_class, rarity):
@@ -884,6 +891,10 @@ class Minion(Character):
         else:
             self._effects_to_add = []
         self.bind("did_damage", self.__on_did_damage)
+        self.name = None
+
+    def desc(self):
+        return "{} {}/{}".format(self.name,self.base_attack,self.health)
 
     def __on_did_damage(self, amount, target):
         self.stealth = False
@@ -1544,8 +1555,18 @@ class Game(Bindable):
         while not self.game_ended:
             self.play_single_turn()
 
+    def print_board(self):
+        Util.print("-----------------------------------------")
+        for player in self.players:
+            board = [m.desc() for m in player.minions]
+            board = str.join(" | ",board)
+            Util.print("{} ({}) {}".format(player.agent.name,player.hero.health,board))
+        Util.print("")
+
     def play_single_turn(self):
+        self.print_board()
         self._start_turn()
+        #print("Starting turn for {}".format(self.current_player.agent.name))
         self.current_player.agent.do_turn(self.current_player)
         self._end_turn()
 
@@ -1631,6 +1652,8 @@ class Game(Bindable):
         return copied_game
 
     def play_card(self, card):
+        Util.print("{} play card {}".format(self.current_player.agent.name,card.name))
+
         if self.game_ended:
             raise GameException("The game has ended")
         if not card.can_use(self.current_player, self):

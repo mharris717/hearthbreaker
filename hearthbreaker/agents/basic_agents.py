@@ -6,6 +6,7 @@ import random
 class DoNothingBot:
     def __init__(self):
         self.game = None
+        self.name = "Bot"
 
     def do_card_check(self, cards):
         return [True, True, True, True]
@@ -22,8 +23,10 @@ class DoNothingBot:
     def choose_option(self, *options):
         return options[0]
 
-
 class PredictableBot:
+    def __init__(self):
+        self.name = None
+        
     def do_card_check(self, cards):
         return [True, True, True, True]
 
