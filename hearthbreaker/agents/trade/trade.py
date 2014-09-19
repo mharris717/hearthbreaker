@@ -3,6 +3,7 @@ class FakeCard:
         self.health = card.health
         self.attack = card.base_attack
         self.base_attack = card.base_attack
+        self.taunt = card.taunt
 
 class Trade:
     def __init__(self,player,my_minion,opp_minion):
@@ -43,8 +44,10 @@ class Trade:
 
     def minion_value(self,minion):
         if minion.health <= 0: return 0
-        res = (minion.base_attack+1) * minion.health**2
-        return res**0.333
+
+        res = (minion.base_attack+0.5) * minion.health**1.5
+        if minion.taunt: res += 0.5
+        return res**0.4
 
 class FaceTrade(Trade):
     def value(self):

@@ -265,22 +265,32 @@ class TestTradeAgent(unittest.TestCase):
         self.assertEqual(len(trades.trades()),2)
         self.assertEqual(trades.trades()[0].opp_minion.name,"Hero")
 
-    if False:
-        def test_coin(self):
-            cards = [ArgentSquire(),BloodfenRaptor(),TheCoin()]
-            possible_plays = PossiblePlays(cards,1)
-            play = possible_plays.plays()[0]
+    def test_coin(self):
+        cards = [ArgentSquire(),BloodfenRaptor(),TheCoin()]
+        possible_plays = PossiblePlays(cards,1)
+        play = possible_plays.plays()[0]
+        names = [c.name for c in play.cards]
+        self.assertEqual(names,["The Coin","Bloodfen Raptor"])
+
+    def test_coin_save(self):
+        cards = [ArgentSquire(),MagmaRager(),TheCoin()]
+        possible_plays = PossiblePlays(cards,1)
+        play = possible_plays.plays()[0]
+        names = [c.name for c in play.cards]
+        self.assertEqual(names,["Argent Squire"])
+
+    def test_hero_power(self):
+        cards = [ArgentSquire()]
+        possible_plays = PossiblePlays(cards,10,allow_hero_power=True)
+
+        for play in possible_plays.plays():
             names = [c.name for c in play.cards]
-            self.assertEqual(names,["The Coin","Bloodfen Raptor"])
+            #print(names)
 
-        def test_coin_save(self):
-            cards = [ArgentSquire(),MagmaRager(),TheCoin()]
-            possible_plays = PossiblePlays(cards,1)
-            play = possible_plays.plays()[0]
-            names = [c.name for c in play.cards]
-            self.assertEqual(names,["Argent Squire"])
+        self.assertEqual(1,len(possible_plays.plays()))
 
-
+       # self.assertEqual(false,)
+        
 
 
         

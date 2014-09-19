@@ -356,8 +356,12 @@ def game_winner(game):
         if player.hero.health > 0:
             res.append(player.agent.name)
 
-    if len(res) != 1:
-      raise Exception("no winner")
+    if len(res) > 1:
+        nums = [player.hero.health for player in game.players]
+        raise Exception("no winner {}".format(nums))
+    elif len(res) == 0:
+        return game.players[0].agent.name
+
 
     return res[0]
 

@@ -31,7 +31,23 @@ class PossiblePlay:
             res += card_mana*factor
             factor = factor / 10
 
+        if self.has_hero_power() and self.available_mana < 6:
+            res -= 10000000000000000
+
         return res
+
+    def has_hero_power(self):
+        for card in self.cards:
+            if card.name == 'Hero Power': return True
+        return False
+
+    def first_card(self):
+        if self.has_hero_power():
+            for card in self.cards:
+                if card.name == 'Hero Power': return card
+            raise Exception("bad")
+        else:
+            return self.cards[0]
 
     def __str__(self):
         names = [c.name for c in self.cards]
@@ -44,8 +60,6 @@ class CoinPlays:
         return cards[0]
 
     def plays(self):
-        #sdgdgdfghdhf()
-        return self.plays_inner()
         if self.has_coin():
             coinPlays = self.after_coin().plays_inner()
             if len(coinPlays) > 0:
@@ -79,24 +93,45 @@ class CoinPlays:
         if len(cards) != len(self.cards)-1: raise Exception("bad")
         return PossiblePlays(cards,self.mana)
 
+class HeroPowerPlayBad:
+    def stuff(self):
+        print('abc')
+
+class HeroPowerCard:
+    def __init__(self):
+        self.mana = 2
+        self.name = "Hero Power"
+
+    def can_use(self,player,game):
+        return True
+
+
 
 class PossiblePlays(CoinPlays):
-    def __init__(self,cards,mana):
+    def __init__(self,cards,mana,allow_hero_power=True):
         self.cards = cards
         self.mana = mana
+        self.allow_hero_power = allow_hero_power
 
     def raw_plays(self):
         res = []
 
         possible = [card for card in filter(lambda card: card.mana <= self.mana, self.cards)]
+        if self.mana >= 2 and self.allow_hero_power and False:
+            possible.append(HeroPowerCard())
+
         if len(possible) == 0:
             return [[]]
 
         for card in possible:
             rest = self.cards.copy()
-            rest.remove(card)
 
-            following_plays = PossiblePlays(rest,self.mana-card.mana).raw_plays()
+            if card.name == 'Hero Power':
+                following_plays = PossiblePlays(rest,self.mana-card.mana,allow_hero_power=False).raw_plays()
+            else:
+                rest.remove(card)
+                following_plays = PossiblePlays(rest,self.mana-card.mana,allow_hero_power=self.allow_hero_power).raw_plays()
+
             for following_play in following_plays:
                 combined = [card] + following_play
                 res.append(combined)
@@ -109,16 +144,16 @@ class PossiblePlays(CoinPlays):
         res = [PossiblePlay(raw,self.mana) for raw in self.raw_plays() if len(raw) > 0]
         res = sorted(res,key=PossiblePlay.value)
         res.reverse()
-        #fgdghfdgh()
-        #print("ZZZZZZZZ plays {}".format(len(res)))
+
         return res
 
 
 class PlayMixin:
     def play_cards(self, player):
         if len(player.minions) == 7: return
+        if player.game.game_ended: return
 
-        plays = PossiblePlays(player.hand,player.mana).plays()
+        plays = PossiblePlays(player.hand,player.mana,allow_hero_power=(not player.hero.power.used)).plays()
 
         if len(plays) > 0:
             play = plays[0]
@@ -126,6 +161,12 @@ class PlayMixin:
                 raise Exception("play has no cards")
 
             #print("Playing {} Mana {} Board {}".format(play.cards[0].name,player.mana,len(player.minions)))
-            card = play.cards[0]
-            player.game.play_card(card)
+            card = play.first_card()
+
+            if card.name == 'Hero Power':
+                #print("Hero Power")
+                player.hero.power.use()
+            else:
+                player.game.play_card(card)
+
             self.play_cards(player)
