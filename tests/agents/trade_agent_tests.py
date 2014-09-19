@@ -10,37 +10,12 @@ from hearthbreaker.cards import GoldshireFootman, MurlocRaider, BloodfenRaptor, 
 from hearthbreaker.constants import CHARACTER_CLASS
 from hearthbreaker.game_objects import Deck, Game
 from hearthbreaker.test_helpers import TestHelpers
-
-class DeckOrder:
-    def __init__(self,*names):
-        self.names = [n for n in names]
-
-    def sort_func(self,card):
-        if card.name in self.names:
-            i = self.names.index(card.name)
-            self.names[i] = "Gibberish"
-            #print("{} for {}".format(i,card.name))
-            return i
-        else:
-            return 99
-
-    def sorted(self,cards):
-        return sorted(cards,key=self.sort_func)
-
-    def sorted_mana(self,cards):
-        res = sorted(cards,key=self.mana_func)
-        res.reverse()
-        return res
-
-    def mana_func(self,card):
-        return card.mana
+from hearthbreaker.deck_order import DeckOrder
 
 class TestTradeAgent(unittest.TestCase):
 
     def setUp(self):
         random.seed(1857)
-
-
 
     def add_minions(self,game,player_index,*minions):
         player = game.players[player_index]
@@ -79,18 +54,7 @@ class TestTradeAgent(unittest.TestCase):
         return str.join("",res)
 
     def test_basic_trade(self):
-        def cb(game):
-            for player in game.players:
-                cards = DeckOrder().sorted_mana(player.deck.cards)
-                player.deck.cards = cards
-
-                # a = [m.name for m in player.deck.cards]
-                #print(a)
-
-        game = TestHelpers().make_game(cb)
-
-        #for player in game.players:
-        #    print(self.player_str(player))
+        game = TestHelpers().make_game()
 
         self.add_minions(game,0,Wisp(),WarGolem())
         self.add_minions(game,1,BloodfenRaptor())
@@ -178,12 +142,7 @@ class TestTradeAgent(unittest.TestCase):
         self.assert_minions(game.players[1],"Harvest Golem","Argent Squire")
 
     def test_will_use_entire_pool(self):
-        def cb(game):
-            for player in game.players:
-                cards = DeckOrder().sorted_mana(player.deck.cards)
-                player.deck.cards = cards
-
-        game = TestHelpers().make_game(cb)
+        game = TestHelpers().make_game()
 
         game.players[1].hand = [DireWolfAlpha(),DireWolfAlpha(),DireWolfAlpha(),HarvestGolem()]
         game.players[1].mana = 3
@@ -194,6 +153,72 @@ class TestTradeAgent(unittest.TestCase):
 
         self.assert_minions(game.players[1],"Dire Wolf Alpha","Dire Wolf Alpha")
 
+    def test_will_attack_face(self):
+        game = TestHelpers().make_game()
+
+        self.add_minions(game,1,BloodfenRaptor())
+
+        self.make_all_active(game)
+        game.current_player = game.players[0]
+        game.play_single_turn()
+
+        self.assert_minions(game.players[0])
+        self.assert_minions(game.players[1],"Bloodfen Raptor")
+
+        self.assertEqual(27,game.players[0].hero.health)
+
+    def test_will_attack_minion_and_face(self):
+        game = TestHelpers().make_game()
+
+        self.add_minions(game,0,Wisp())
+        self.add_minions(game,1,BloodfenRaptor(),RiverCrocolisk())
+
+        self.make_all_active(game)
+        game.current_player = game.players[0]
+        game.play_single_turn()
+
+        self.assert_minions(game.players[0])
+        self.assert_minions(game.players[1],"Bloodfen Raptor","River Crocolisk")
+
+        self.assertEqual(28,game.players[0].hero.health)
+
+    def test_will_respect_taunt(self):
+        game = TestHelpers().make_game()
+
+        self.add_minions(game,0,Wisp(),GoldshireFootman())
+        self.add_minions(game,1,BloodfenRaptor())
+
+        self.make_all_active(game)
+        game.current_player = game.players[0]
+        game.play_single_turn()
+
+        self.assert_minions(game.players[0],"Wisp")
+        self.assert_minions(game.players[1],"Bloodfen Raptor")
+
+    def test_will_attack_twice(self):
+        game = TestHelpers().make_game()
+
+        self.add_minions(game,0,Wisp(),GoldshireFootman())
+        self.add_minions(game,1,BloodfenRaptor(),RiverCrocolisk())
+
+        self.make_all_active(game)
+        game.current_player = game.players[0]
+        game.play_single_turn()
+
+        self.assert_minions(game.players[0])
+        self.assert_minions(game.players[1],"Bloodfen Raptor","River Crocolisk")
+
+    def test_buff_target(self):
+        game = TestHelpers().make_game()
+
+        self.add_minions(game,1,BloodfenRaptor(),RiverCrocolisk())
+        self.make_all_active(game)
+        self.add_minions(game,1,AbusiveSergeant())
+
+        game.current_player = game.players[0]
+        game.play_single_turn()
+
+        self.assertEqual(25,game.players[0].hero.health)
 
     def assert_minions(self,player,*names):
         actual = [m.name for m in player.minions]

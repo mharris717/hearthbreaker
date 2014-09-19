@@ -1,14 +1,6 @@
 from hearthbreaker.agents.basic_agents import RandomAgent
-
-def uniq_by_sorted(list):
-    res = {}
-    for obj in list:
-        a = [c.name for c in obj]
-        k = str.join("",sorted(a))
-        if not res.get(k):
-            res[k] = obj
-
-    return res.values()
+from hearthbreaker.util import Util
+from functools import reduce
 
 class PossiblePlay:
     def __init__(self,cards,available_mana):
@@ -19,16 +11,10 @@ class PossiblePlay:
         self.available_mana = available_mana
 
     def card_mana(self):
-        res = 0
-        for card in self.cards:
-            res += card.mana
-        return res
+        return reduce(lambda s,c: s + c.mana, self.cards, 0)
 
     def sorted_mana(self):
-        res = [card.mana for card in self.cards]
-        res = sorted(res)
-        res.reverse()
-        return res
+        return Util.reverse_sorted(map(lambda c: c.mana, self.cards))
 
     def value(self):
         res = self.card_mana()
@@ -36,7 +22,6 @@ class PossiblePlay:
         if wasted < 0:
             raise Exception("Too Much Mana")
 
-        #print("wasted {}".format(wasted))
         res += wasted*-100000000000
 
         factor = 100000000
@@ -73,11 +58,7 @@ class PossiblePlays:
                 combined = [card] + following_play
                 res.append(combined)
 
-        res = uniq_by_sorted(res)
-
-        #print("Plays:")
-        #for play in res:
-        #    print([c.name for c in play])
+        res = Util.uniq_by_sorted(res)
 
         return res
 
@@ -97,18 +78,21 @@ class TradeAgent(RandomAgent):
         return res
 
     def playable_cards(self, player):
-        def mana_func(card):
-            return card.mana * -1
+        res = filter(lambda card: card.can_use(player, player.game), player.hand)
+        return Util.reverse_sorted(res,Card.mana)
 
-        res = [card for card in filter(lambda card: card.can_use(player, player.game), player.hand)]
-        res = [card for card in filter(lambda card: card.name != "The Coin", res)]
-        return sorted(res,key=mana_func)
+    def targetable_minions(self,all):
+        taunt = [m for m in filter(lambda m: m.taunt,all)]
+        if len(taunt) > 0:
+            return taunt
+        else:
+            return all
 
     def trades(self,player):
         res = []
 
         me = self.attack_minions(player)
-        opp = player.opponent.minions
+        opp = self.targetable_minions(player.opponent.minions)
 
         for my_minion in me:
             for opp_minion in opp:
@@ -121,51 +105,43 @@ class TradeAgent(RandomAgent):
         return res
 
     def play_cards(self, player):
-        plays = PossiblePlays(player.hand,player.mana).plays()
+        if len(player.minions) == 7: return
 
-        #print("Plays:")
-        #for play in plays:
-        #    print(play)
+        plays = PossiblePlays(player.hand,player.mana).plays()
 
         if len(plays) > 0:
             play = plays[0]
             if len(play.cards) == 0:
                 raise Exception("play has no cards")
 
+            #print("Playing {} Mana {} Board {}".format(play.cards[0].name,player.mana,len(player.minions)))
             card = play.cards[0]
             player.game.play_card(card)
             self.play_cards(player)
 
-
-    def play_cards_old(self, player):
-        
-
-        #print("Starting Mana {}".format(player.mana))
-        playable_cards = self.playable_cards(player)
-        while len(playable_cards) > 0:
-            player.game.play_card(playable_cards[0])
-            playable_cards = self.playable_cards(player)
-
-    def do_turn(self, player):
-        #print("do_turn")
-        #raise Exception("actually in do_turn")
+    def attack_once(self,player):
         attack_minions = self.attack_minions(player)
-        #print("attack minions: {}, all: {}".format(len(attack_minions),len(player.minions)))
-
-        
-
-        self.play_cards(player)
-        #print("playable cards: {}".format(len(playable_cards)))
-
-
-        if len(attack_minions) > 0:
-            self.current_trade = self.trades(player)[0]
-            #print("set trade {}".format(self.current_trade))
+        trades = self.trades(player)
+        if len(trades) > 0:
+            self.current_trade = trades[0]
             self.current_trade.my_minion.attack()
         else:
-            return
+            self.current_trade = Trade(player,attack_minions[0],player.opponent.hero)
+            self.current_trade.my_minion.attack()
 
-    def choose_target(self, targets):
+    def attack(self,player):
+        attack_minions = self.attack_minions(player)
+        if len(attack_minions) > 0:
+            self.attack_once(player)
+            self.attack(player)
+
+    def do_turn(self, player):
+        self.player = player
+        self.play_cards(player)
+
+        self.attack(player)
+
+    def choose_target_enemy(self, targets):
         if not self.current_trade:
             raise Exception("No current trade")
 
@@ -177,6 +153,26 @@ class TradeAgent(RandomAgent):
                 return target
 
         raise Exception("Could not find target")
+
+    def choose_target_friendly(self,targets):
+        return targets[0]
+
+    def target_owner(self,player,target):
+        for minion in player.minions:
+            if minion == target: return "Me"
+        for minion in player.opponent.minions:
+            if minion == target: return "Opponent"
+
+        if target.name == "Hero": return "Hero"
+
+        raise Exception("No Owner of {}".format(target.name))
+
+
+    def choose_target(self,targets):
+        if len(targets) == 0: return None
+        owners = [self.target_owner(self.player,target) for target in targets]
+        # print(owners)
+        return self.choose_target_enemy(targets)
             
 class FakeCard:
     def __init__(self,card):
@@ -216,3 +212,6 @@ class Trade:
 
     def __str__(self):
         return "Trade {} for {}".format(self.minion_desc(self.my_minion),self.minion_desc(self.opp_minion))
+
+
+

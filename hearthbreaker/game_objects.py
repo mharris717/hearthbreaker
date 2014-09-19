@@ -1342,6 +1342,8 @@ class Hero(Character):
         self.player = player
         self.power = hearthbreaker.powers.powers(self.character_class)(self)
 
+        self.name = "Hero"
+
     def copy(self, new_owner, new_game):
         new_hero = copy.copy(self)
         new_hero.events = dict()
