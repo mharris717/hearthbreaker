@@ -58,8 +58,9 @@ class PredictableBot:
 
 
 class RandomAgent(DoNothingBot):
-    def __init__(self):
+    def __init__(self,name=""):
         super().__init__()
+        self.name = name
 
     def do_card_check(self, cards):
         return [True, True, True, True]
@@ -86,6 +87,7 @@ class RandomAgent(DoNothingBot):
                 return
 
     def choose_target(self, targets):
+        #print('Targets Size: {}'.format(len(targets)))
         return targets[random.randint(0, len(targets) - 1)]
 
     def choose_index(self, card, player):

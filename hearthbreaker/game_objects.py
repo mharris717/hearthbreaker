@@ -756,6 +756,7 @@ class MinionCard(Card, metaclass=abc.ABCMeta):
             raise GameException("Only 7 minions allowed on the field at a time")
         super().use(player, game)
         minion = self.create_minion(player)
+        minion.name = self.name
         minion.card = self
         minion.player = player
         minion.game = game
@@ -793,6 +794,7 @@ class MinionCard(Card, metaclass=abc.ABCMeta):
         """
         if len(player.minions) < 7:
             minion = self.create_minion(player)
+            minion.name = self.name
             minion.card = self
             minion.player = player
             minion.game = game
@@ -1264,13 +1266,14 @@ class Weapon(Bindable):
 
 
 class Deck:
-    def __init__(self, cards, character_class):
+    def __init__(self, cards, character_class, use_random=True):
         if len(cards) != 30:
             raise GameException("Deck must have exactly 30 cards in it")
         self.cards = cards
         self.character_class = character_class
         self.used = [False] * 30
         self.left = 30
+        self.use_random = use_random
 
     def copy(self):
         return copy.deepcopy(self)
@@ -1278,7 +1281,24 @@ class Deck:
     def can_draw(self):
         return self.left > 0
 
-    def draw(self, random_func):
+    def draw_ordered(self):
+        if not self.can_draw():
+            raise GameException("Cannot draw more than 30 cards")
+
+        index = 0
+        count = 0
+        i = 0
+        while count <= index:
+            if not self.used[i]:
+                count += 1
+            i += 1
+
+        self.used[i - 1] = True
+        self.left -= 1
+        return self.cards[i - 1]
+
+
+    def draw_random(self, random_func):
         if not self.can_draw():
             raise GameException("Cannot draw more than 30 cards")
 
@@ -1293,6 +1313,13 @@ class Deck:
         self.used[i - 1] = True
         self.left -= 1
         return self.cards[i - 1]
+
+    def draw(self,random_func):
+        if self.use_random:
+            return self.draw_random(random_func)
+        else:
+            return self.draw_ordered()
+
 
     def put_back(self, card):
         for index in range(0, 30):
@@ -1451,7 +1478,7 @@ class Player(Bindable):
 
 
 class Game(Bindable):
-    def __init__(self, decks, agents, random_func=random.randint):
+    def __init__(self, decks, agents, random_func=random.randint,before_draw_callback=None):
         super().__init__()
         self.delayed_minions = set()
         self.random = random_func
@@ -1468,6 +1495,10 @@ class Game(Bindable):
         self.other_player.opponent = self.current_player
         self.game_ended = False
         self.minion_counter = 0
+
+        if before_draw_callback:
+            before_draw_callback(self)
+            
         for i in range(0, 3):
             self.players[0].draw()
 
