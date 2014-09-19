@@ -7,5 +7,5 @@ task default: :test
 task :play do
   num = (ENV['num_games'] || 1).to_i
   puts "num: #{num}"
-  exec "python hearthbreaker/ui/text_runner.py wisp.hsdeck terrible.hsdeck #{num}"
+  exec "python hearthbreaker/ui/text_runner.py example.hsdeck example.hsdeck #{num}"
 end
