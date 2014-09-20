@@ -44,6 +44,10 @@ class ChooseTargetMixin:
         return self.choose_target_enemy(targets)
 
 class TradeAgent(TradeMixin,AttackMixin,PlayMixin,ChooseTargetMixin,RandomAgent):
+    def __init__(self):
+        super().__init__()
+        self.current_trade = None
+
     def playable_cards(self, player):
         raise Exception("unused")
         res = filter(lambda card: card.can_use(player, player.game), player.hand)

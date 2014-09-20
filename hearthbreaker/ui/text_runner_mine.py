@@ -342,21 +342,68 @@ def render_game(stdscr):
 
     stdscr.clear()
 
-    prompt_window = stdscr.derwin(1, 80, 23, 0)
-    text_window = stdscr.derwin(1, 80, 24, 0)
-
     deck1 = load_deck(sys.argv[1])
     deck2 = load_deck(sys.argv[2])
-    game = Game([deck1, deck2], [TextAgent(stdscr, prompt_window, text_window), TradeAgent()])
-    if isinstance(game.players[0].agent, TextAgent):
-        renderer = GameRender(stdscr, game, game.players[0])
-    else:
-        renderer = GameRender(stdscr, game, game.players[1])
+    game = Game([deck1, deck2], [RandomAgent(), RandomAgent()])
     game.start()
+    print(game)
+    print("hello")
 
+def game_winner(game):
+    res = []
+
+    for player in game.players:
+        if player.hero.health > 0:
+            res.append(player.agent.name)
+
+    if len(res) > 1:
+        nums = [player.hero.health for player in game.players]
+        raise Exception("no winner {}".format(nums))
+    elif len(res) == 0:
+        return game.players[0].agent.name
+
+
+    return res[0]
+
+def run_game():
+    #deck1 = load_deck(sys.argv[1])
+    #deck2 = load_deck(sys.argv[2])
+    deck1 = load_deck("vanilla.hsdeck")
+    deck2 = load_deck("vanilla.hsdeck")
+    game = Game([deck1, deck2], [TradeAgent("TRAD"), RandomAgent("RAND")])
+    game.start()
+    return game_winner(game)
+    
+
+def run_games(num_games):
+    res = dict()
+
+    thresh = 25
+
+    for i in range(0,num_games):
+        winner = run_game()
+        res[winner] = res.get(winner,0) + 1
+
+        if i > 0 and i%thresh == (thresh-1) and i < (num_games-1):
+        #if i > 9999999:
+            str = "{} ".format(i)
+            for k in res.keys():
+                v = res[k]
+                v = round(v/(i+1)*100.0,2)
+                str = "{} {}: {}% ".format(str,k,v)
+            print(str.strip())
+    
+    print(res)
 
 if __name__ == "__main__":
-    if len(sys.argv) < 3:
-        print_usage()
-        sys.exit()
-    curses.wrapper(render_game)
+    num_games = 10000
+    #if len(sys.argv) >= 4:
+    #    num_games = int(sys.argv[3])
+
+
+
+    run_games(num_games)
+
+# {'Trade': 806, 'Random': 4194}
+# {'Trade': 799, 'Random': 4201}
+# {'Random': 4162, 'Trade': 838}
