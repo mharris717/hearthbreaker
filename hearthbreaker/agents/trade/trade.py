@@ -1,6 +1,35 @@
 from hearthbreaker.game_objects import Hero
 from functools import reduce
 
+import collections
+import functools
+
+class memoized(object):
+   '''Decorator. Caches a function's return value each time it is called.
+   If called later with the same arguments, the cached value is returned
+   (not reevaluated).
+   '''
+   def __init__(self, func):
+      self.func = func
+      self.cache = {}
+   def __call__(self, *args):
+      if not isinstance(args, collections.Hashable):
+         # uncacheable. a list, for instance.
+         # better to not cache than blow up.
+         return self.func(*args)
+      if args in self.cache:
+         return self.cache[args]
+      else:
+         value = self.func(*args)
+         self.cache[args] = value
+         return value
+   def __repr__(self):
+      '''Return the function's docstring.'''
+      return self.func.__doc__
+   def __get__(self, obj, objtype):
+      '''Support instance methods.'''
+      return functools.partial(self.__call__, obj)
+
 class FakeCard:
     def __init__(self,card):
         self.health = card.health
@@ -15,6 +44,7 @@ class Trade:
         self.my_minion = my_minion
         self.opp_minion = opp_minion
 
+    @memoized
     def after_attack(self):
         res = {}
         res["my_minion"] = self.after_damage(self.my_minion,self.opp_minion)
@@ -32,6 +62,7 @@ class Trade:
     def end_value(self):
         return self.minion_value(self.after_attack()['my_minion']) - self.minion_value(self.after_attack()['opp_minion'])
 
+    @memoized
     def value(self): 
         res = self.end_value() - self.start_value()
 
@@ -54,6 +85,7 @@ class Trade:
         return res**0.4
 
     def is_lethal(self):
+        raise Exception("unused")
         return false
         #return self.opp_minion.__class__ == Hero and self.my_minion.attack >= self.opp_minion.player.hero.health
 
@@ -68,18 +100,14 @@ class TradeSequence:
         self.current_trades_obj = current_trades_obj
 
     def after_next_trade(self,next_trade):
-        past_trades = self.past_trades
+        past_trades = [t for t in self.past_trades]
         past_trades.append(next_trade)
 
-        trades_obj = Trades(self.current_trades_obj.player,self.current_trades_obj.attack_minions.copy(),self.current_trades_obj.opp_minions.copy(),self.current_trades_obj.opp_hero.copy(None,None))
+        to = self.current_trades_obj
+        trades_obj = Trades(to.player,to.attack_minions,to.opp_minions,to.opp_hero.copy(None,None))
         trades_obj.attack_minions.remove(next_trade.my_minion)
         if next_trade.is_opp_dead():
             trades_obj.opp_minions.remove(next_trade.opp_minion)
-            if len(trades_obj.opp_minions)+1 != len(self.current_trades_obj.opp_minions):
-                raise Exception("didn't remove defending minion")
-
-        if len(trades_obj.attack_minions)+1 != len(self.current_trades_obj.attack_minions):
-            raise Exception("didn't remove my attacking minion")
 
         res = TradeSequence(trades_obj,past_trades)
         return res
@@ -93,27 +121,52 @@ class TradeSequence:
         else:
             return reduce(lambda s,t: s + t.value(),self.past_trades,0.0)
 
+    @memoized
     def future_trade_value(self):
         if self.has_lethal(): return 9999999999
         if len(self.current_trades_obj.attack_minions) == 0: return 0.0
 
+        if len(self.past_trades) > 1: return 0
+
         next_trades = self.current_trades_obj.trades()
         if len(next_trades) == 0: return 0.0
+        if len(next_trades) > 1000000: 
+            return 0.0
 
-        best_value = -99999999999.0
-        best_trade = None
-        for next_trade in next_trades:
-            next_seq = self.after_next_trade(next_trade)
-            full = next_trade.value() + next_seq.future_trade_value()
-            if full > best_value:
-                best_trade = next_trade
-                best_value = full
 
-        return best_value
+        if self.current_trades_obj.opp_has_taunt():
+            best_value = -99999999999.0
+            best_trade = None
+            for next_trade in next_trades:
+                next_seq = self.after_next_trade(next_trade)
+                full = next_trade.value() + next_seq.future_trade_value()
+                if full > best_value:
+                    best_trade = next_trade
+                    best_value = full
+            return best_value
+        else:
+            return next_trades[0].value()
+
+        
+
+        if False:
+            ts = self.after_next_trade(best_trade).current_trades_obj
+            if len(ts.attack_minions) > 999999990:
+                if len(self.past_trades) > 0:
+                    l = self.past_trades[len(self.past_trades)-1]
+                    print("LAST {}".format(l))
+
+                print("NEXT {}".format(best_trade))
+                print("FUTURE")
+                print(ts)
+                print("")
+
+        
 
         #next_seq = self.after_next_trade(next_trades[0])
         #return next_trades[0].value() + next_seq.future_trade_value()
 
+    @memoized
     def trade_value(self):
         return self.past_trade_value() + self.future_trade_value()
 
@@ -137,9 +190,9 @@ class FaceTrade(Trade):
 class Trades:
     def __init__(self,player,attack_minions,opp_minions,opp_hero):
         self.player = player
-        self.attack_minions = attack_minions
-        self.opp_minions = opp_minions
-        self.opp_hero = opp_hero
+        self.attack_minions = attack_minions.copy()
+        self.opp_minions = opp_minions.copy()
+        self.opp_hero = opp_hero#.copy(opp_hero.character_class,opp_hero.player)
 
     def opp_has_taunt(self):
         for minion in self.opp_minions:
@@ -149,11 +202,13 @@ class Trades:
     def total_attack(self):
         return reduce(lambda s,i: s+i.base_attack,self.attack_minions,0)
 
+    @memoized
     def has_lethal(self):
         #s = "Taunt: {}, {} vs {}".format(self.opp_has_taunt(),self.total_attack(),self.opp_hero.health)
         #print(s)
         return not self.opp_has_taunt() and self.total_attack() >= self.opp_hero.health
 
+    @memoized
     def trade_value(self,trade):
         if not trade.needs_sequence() or len(self.attack_minions) <= 1: 
             return trade.value()
@@ -162,7 +217,7 @@ class Trades:
         return seq.trade_value()
 
 
-
+    @memoized
     def trades(self):
         res = []
 
@@ -180,7 +235,16 @@ class Trades:
                 trade = FaceTrade(self.player,my_minion,self.opp_hero)
                 res.append(trade)
 
-        res = sorted(res,key=self.trade_value)
+        if self.opp_has_taunt():
+            if len(res) >= 12:
+                res = sorted(res,key=lambda t: t.value())[0:4]
+            elif len(res) >= 8:
+                res = sorted(res,key=lambda t: t.value())[0:3]
+
+            res = sorted(res,key=self.trade_value)
+        else:
+            res = sorted(res,key=lambda t: t.value())
+
         res.reverse()
 
         return res
@@ -193,7 +257,7 @@ class Trades:
             return all
 
     def __str__(self):
-        res = ["\nTRADES:"]
+        res = ["TRADES:"]
         for t in self.trades():
             s = t.__str__()
             s += " Root Value: {}".format(self.trade_value(t))

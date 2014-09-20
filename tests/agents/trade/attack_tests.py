@@ -43,7 +43,7 @@ class TestTradeAgentAttackBasicTests(TestCaseMixin,unittest.TestCase):
         self.assert_minions(game.players[0],"Bloodfen Raptor","River Crocolisk")
 
         # should probably be 27
-        self.assertEqual(28,game.players[1].hero.health)
+        self.assertEqual(27,game.players[1].hero.health)
 
     def test_will_respect_taunt(self):
         game = TestHelpers().make_game()
@@ -204,20 +204,29 @@ class TestTradeAgentAttackLethalTests(TestCaseMixin,unittest.TestCase):
         
 
         self.assertEqual(len(trades.trades()),3)
-        self.assertEqual(trade.my_minion.health,9)
+        self.assertEqual(trade.my_minion.health,8)
 
     def test_good_trade_with_taunt2(self):
         #print("\n\nstarting bad test") 
-        me = self.make_minions("1/6","1/6","9/1")
+        me = self.make_minions("2/6","1/6","9/1")
         opp = self.make_minions("8/2t","9/9")
 
         game,trades = self.make_trades2(me,opp)
         trade = trades.trades()[0]
 
-        print(trades)
+        #print(trades)
         
 
         self.assertEqual(len(trades.trades()),3)
         self.assertEqual(trade.my_minion.health,6)
         self.assertEqual(trade.opp_minion.health,2)
+
+    def test_lots(self):
+        me = self.make_minions("1/1","2/1","3/2","2/6","4/4","5/5")
+        opp = self.make_minions("1/1t","2/1","3/2t","2/6","4/4","5/5t","2/5t","8/3t")
+
+        #return
+
+        game,trades = self.make_trades2(me,opp)
+        trade = trades.trades()[0]
 
