@@ -7,3 +7,5 @@ _build
 bin
 include
 lib
+man
+.Python

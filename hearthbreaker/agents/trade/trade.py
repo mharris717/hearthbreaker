@@ -56,6 +56,39 @@ class Trade:
         return false
         #return self.opp_minion.__class__ == Hero and self.my_minion.attack >= self.opp_minion.player.hero.health
 
+    def is_opp_dead(self):
+        return self.after_attack()['opp_minion'].health <= 0
+
+    def needs_sequence(self): return True
+
+class TradeSequence:
+    def __init__(self,current_trades_obj,past_trades=[]):
+        self.past_trades = past_trades
+        self.current_trades_obj = current_trades_obj
+
+    def after_next_trade(self,next_trade):
+        past_trades = self.past_trades
+        past_trades.append(next_trade)
+
+        trades_obj = Trades(self.current_trades_obj.player,self.current_trades_obj.attack_minions.copy(),self.current_trades_obj.opp_minions.copy(),self.current_trades_obj.opp_hero.copy(None,None))
+        trades_obj.attack_minions.remove(next_trade.my_minion)
+        if next_trade.is_opp_dead():
+            trades_obj.opp_minions.remove(next_trade.opp_minion)
+            if len(trades_obj.opp_minions)+1 != len(self.current_trades_obj.opp_minions):
+                raise Exception("didn't remove defending minion")
+
+        if len(trades_obj.attack_minions)+1 != len(self.current_trades_obj.attack_minions):
+            raise Exception("didn't remove my attacking minion")
+
+        res = TradeSequence(trades_obj,past_trades)
+        return res
+
+    def has_lethal(self):
+        return self.current_trades_obj.has_lethal()
+
+
+
+
 class FaceTrade(Trade):
     def value(self):
         if self.is_lethal(): return 9999999
@@ -66,6 +99,8 @@ class FaceTrade(Trade):
 
     def is_lethal(self):
         return self.my_minion.base_attack >= self.opp_minion.health
+
+    def needs_sequence(self): return False
 
 
 class Trades:
@@ -84,14 +119,30 @@ class Trades:
         return reduce(lambda s,i: s+i.base_attack,self.attack_minions,0)
 
     def has_lethal(self):
+        #s = "Taunt: {}, {} vs {}".format(self.opp_has_taunt(),self.total_attack(),self.opp_hero.health)
+        #print(s)
         return not self.opp_has_taunt() and self.total_attack() >= self.opp_hero.health
+
+    def trade_value(self,trade):
+        if not trade.needs_sequence(): 
+            return trade.value()
+
+        if len(self.attack_minions) <= 1:
+            return trade.value()
+
+        seq = TradeSequence(self).after_next_trade(trade)
+        if seq.has_lethal():
+            #print("lethal")
+            return 99999999
+        else:
+            #print("no lethal")
+            return trade.value()
 
     def trades(self):
         res = []
 
         me = self.attack_minions
         opp = self.targetable_minions(self.opp_minions)
-
 
         if not self.has_lethal():
             for my_minion in me:
@@ -104,7 +155,7 @@ class Trades:
                 trade = FaceTrade(self.player,my_minion,self.opp_hero)
                 res.append(trade)
 
-        res = sorted(res,key=lambda t: t.value())
+        res = sorted(res,key=self.trade_value)
         res.reverse()
 
         return res
@@ -116,12 +167,20 @@ class Trades:
         else:
             return all
 
+    def __str__(self):
+        res = ["\nTRADES:"]
+        for t in self.trades():
+            s = t.__str__()
+            s += " Root Value: {}".format(self.trade_value(t))
+            res.append(s)
+        return str.join("\n",res)
+
 
 
 class TradeMixin:
     def trades(self,player):
         res = Trades(player,self.attack_minions(player),player.opponent.minions,player.opponent.hero)
-        return res.trades()
+        return [t for t in res.trades() if t.value() > -1]
 
 
 
@@ -130,17 +189,11 @@ class AttackMixin:
         attack_minions = self.attack_minions(player)
         trades = self.trades(player)
         if len(trades) > 0:
-            #print(trades[0])
             self.current_trade = trades[0]
-            self.current_trade.my_minion.attack()
-        else:
-            raise Exception("no trade")
-            self.current_trade = Trade(player,attack_minions[0],player.opponent.hero)
             self.current_trade.my_minion.attack()
 
     def attack(self,player):
-        attack_minions = self.attack_minions(player)
-        if len(attack_minions) > 0:
+        if len(self.trades(player)) > 0:
             self.attack_once(player)
             self.attack(player)
 
