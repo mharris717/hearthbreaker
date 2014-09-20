@@ -100,8 +100,19 @@ class TradeSequence:
         next_trades = self.current_trades_obj.trades()
         if len(next_trades) == 0: return 0.0
 
-        next_seq = self.after_next_trade(next_trades[0])
-        return next_trades[0].value() + next_seq.future_trade_value()
+        best_value = -99999999999.0
+        best_trade = None
+        for next_trade in next_trades:
+            next_seq = self.after_next_trade(next_trade)
+            full = next_trade.value() + next_seq.future_trade_value()
+            if full > best_value:
+                best_trade = next_trade
+                best_value = full
+
+        return best_value
+
+        #next_seq = self.after_next_trade(next_trades[0])
+        #return next_trades[0].value() + next_seq.future_trade_value()
 
     def trade_value(self):
         return self.past_trade_value() + self.future_trade_value()
@@ -149,6 +160,8 @@ class Trades:
 
         seq = TradeSequence(self).after_next_trade(trade)
         return seq.trade_value()
+
+
 
     def trades(self):
         res = []
