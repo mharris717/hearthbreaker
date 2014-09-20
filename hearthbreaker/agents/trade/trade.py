@@ -1,3 +1,6 @@
+from hearthbreaker.game_objects import Hero
+from functools import reduce
+
 class FakeCard:
     def __init__(self,card):
         self.health = card.health
@@ -49,12 +52,21 @@ class Trade:
         if minion.taunt: res += 0.5
         return res**0.4
 
+    def is_lethal(self):
+        return false
+        #return self.opp_minion.__class__ == Hero and self.my_minion.attack >= self.opp_minion.player.hero.health
+
 class FaceTrade(Trade):
     def value(self):
+        if self.is_lethal(): return 9999999
         return self.my_minion.base_attack * 0.2
 
     def __str__(self):
         return "Face {} Value {}".format(self.minion_desc(self.my_minion),self.value())
+
+    def is_lethal(self):
+        return self.my_minion.base_attack >= self.opp_minion.health
+
 
 class Trades:
     def __init__(self,player,attack_minions,opp_minions,opp_hero):
@@ -68,16 +80,24 @@ class Trades:
             if minion.taunt: return True
         return False
 
+    def total_attack(self):
+        return reduce(lambda s,i: s+i.base_attack,self.attack_minions,0)
+
+    def has_lethal(self):
+        return not self.opp_has_taunt() and self.total_attack() >= self.opp_hero.health
+
     def trades(self):
         res = []
 
         me = self.attack_minions
         opp = self.targetable_minions(self.opp_minions)
 
-        for my_minion in me:
-            for opp_minion in opp:
-                trade = Trade(self.player,my_minion,opp_minion)
-                res.append(trade)
+
+        if not self.has_lethal():
+            for my_minion in me:
+                for opp_minion in opp:
+                    trade = Trade(self.player,my_minion,opp_minion)
+                    res.append(trade)
 
         if not self.opp_has_taunt():
             for my_minion in me:
@@ -114,6 +134,7 @@ class AttackMixin:
             self.current_trade = trades[0]
             self.current_trade.my_minion.attack()
         else:
+            raise Exception("no trade")
             self.current_trade = Trade(player,attack_minions[0],player.opponent.hero)
             self.current_trade.my_minion.attack()
 

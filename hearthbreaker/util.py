@@ -1,3 +1,5 @@
+import random
+
 class Util:
   @staticmethod
   def reverse_sorted(list):
@@ -20,3 +22,8 @@ class Util:
   def print(str):
     #print(str)
     None
+
+  @staticmethod
+  def rand_el(list):
+    i = random.randint(0,len(list)-1)
+    return list[i]

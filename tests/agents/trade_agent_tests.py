@@ -6,7 +6,7 @@ from hearthbreaker.cards import GoldshireFootman, MurlocRaider, BloodfenRaptor, 
     IronfurGrizzly, MagmaRager, SilverbackPatriarch, ChillwindYeti, SenjinShieldmasta, BootyBayBodyguard, \
     FenCreeper, BoulderfistOgre, WarGolem, Shieldbearer, FlameImp, YoungPriestess, DarkIronDwarf, DireWolfAlpha, \
     VoidWalker, HarvestGolem, KnifeJuggler, ShatteredSunCleric, ArgentSquire, Doomguard, Soulfire, DefenderOfArgus, \
-    AbusiveSergeant, NerubianEgg, KeeperOfTheGrove, Wisp, Deathwing
+    AbusiveSergeant, NerubianEgg, KeeperOfTheGrove, Wisp, Deathwing, NatPagle, AmaniBerserker
 from hearthbreaker.constants import CHARACTER_CLASS
 from hearthbreaker.game_objects import Deck, Game, TheCoin, Hero
 from hearthbreaker.test_helpers import TestHelpers
@@ -289,7 +289,38 @@ class TestTradeAgent(unittest.TestCase):
 
         self.assertEqual(1,len(possible_plays.plays()))
 
-       # self.assertEqual(false,)
+    def make_trades2(self,me,opp):
+        me = [m for m in map(lambda c: c.create_minion_named(None),me)]
+        opp = [m for m in map(lambda c: c.create_minion_named(None),opp)]
+
+        game = TestHelpers().make_game()
+        trades = Trades(game.players[0],me,opp,game.players[1].hero)
+
+        return [game,trades]
+
+    def test_lethal(self):
+        me = [ChillwindYeti()]
+        opp = [AmaniBerserker()]
+
+        a = self.make_trades2(me,opp)
+        trades = a[1]
+        game = a[0]
+        game.players[1].hero.health = 1
+
+        self.assertEqual(len(trades.trades()),1)
+        self.assertEqual(trades.trades()[0].opp_minion.__class__,Hero)
+
+    def test_lethal_with_two(self):
+        me = [ChillwindYeti(),WarGolem()]
+        opp = [AmaniBerserker()]
+
+        a = self.make_trades2(me,opp)
+        trades = a[1]
+        game = a[0]
+        game.players[1].hero.health = 10
+
+        self.assertEqual(len(trades.trades()),2)
+        self.assertEqual(trades.trades()[0].opp_minion.__class__,Hero)
         
 
 

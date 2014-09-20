@@ -2,23 +2,26 @@ from hearthbreaker.agents.basic_agents import RandomAgent
 from hearthbreaker.agents.trade.possible_play import PossiblePlays,PlayMixin
 from hearthbreaker.agents.trade.trade import Trade,TradeMixin,AttackMixin
 from hearthbreaker.game_objects import Hero
+from hearthbreaker.util import Util
 
 class ChooseTargetMixin:
     def gdfgdfggdfgdf(self):
         print('hello')
 
     def choose_target_enemy(self, targets):
-        if not self.current_trade:
-            raise Exception("No current trade")
-
         if len(targets) == 0:
             raise Exception("No targets")
+
+        if not self.current_trade:
+            return Util.rand_el(targets)
+            #raise Exception("No current trade")
 
         for target in targets:
             if self.current_trade.opp_minion == target:
                 return target
 
-        raise Exception("Could not find target")
+        #raise Exception("Could not find target {}".format(target))
+        return Util.rand_el(targets)
 
     def choose_target_friendly(self,targets):
         return targets[0]
