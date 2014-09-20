@@ -6,7 +6,8 @@ class FakeCard:
         self.health = card.health
         self.attack = card.base_attack
         self.base_attack = card.base_attack
-        self.taunt = card.taunt
+        if hasattr(card,"taunt"):
+            self.taunt = card.taunt
 
 class Trade:
     def __init__(self,player,my_minion,opp_minion):
@@ -86,6 +87,25 @@ class TradeSequence:
     def has_lethal(self):
         return self.current_trades_obj.has_lethal()
 
+    def past_trade_value(self):
+        if self.has_lethal():
+            return 99999999
+        else:
+            return reduce(lambda s,t: s + t.value(),self.past_trades,0.0)
+
+    def future_trade_value(self):
+        if self.has_lethal(): return 9999999999
+        if len(self.current_trades_obj.attack_minions) == 0: return 0.0
+
+        next_trades = self.current_trades_obj.trades()
+        if len(next_trades) == 0: return 0.0
+
+        next_seq = self.after_next_trade(next_trades[0])
+        return next_trades[0].value() + next_seq.future_trade_value()
+
+    def trade_value(self):
+        return self.past_trade_value() + self.future_trade_value()
+
 
 
 
@@ -124,19 +144,11 @@ class Trades:
         return not self.opp_has_taunt() and self.total_attack() >= self.opp_hero.health
 
     def trade_value(self,trade):
-        if not trade.needs_sequence(): 
-            return trade.value()
-
-        if len(self.attack_minions) <= 1:
+        if not trade.needs_sequence() or len(self.attack_minions) <= 1: 
             return trade.value()
 
         seq = TradeSequence(self).after_next_trade(trade)
-        if seq.has_lethal():
-            #print("lethal")
-            return 99999999
-        else:
-            #print("no lethal")
-            return trade.value()
+        return seq.trade_value()
 
     def trades(self):
         res = []
