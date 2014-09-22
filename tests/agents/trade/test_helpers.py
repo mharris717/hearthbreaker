@@ -90,7 +90,7 @@ class TestHelpers:
 
             cls.create_minion = create_minion_named_gen
 
-    def list_copy(self,list):
+    def list_copy(self, list):
         return [c for c in list]
 
     def make_game(self, before_draw_callback=None):
