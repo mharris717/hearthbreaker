@@ -6,6 +6,4 @@ htmlcov
 _build
 bin
 include
-lib
-man
 .Python

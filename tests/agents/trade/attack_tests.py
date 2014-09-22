@@ -9,12 +9,12 @@ from hearthbreaker.cards import GoldshireFootman, MurlocRaider, BloodfenRaptor, 
     AbusiveSergeant, NerubianEgg, KeeperOfTheGrove, Wisp, Deathwing, NatPagle, AmaniBerserker
 from hearthbreaker.constants import CHARACTER_CLASS
 from hearthbreaker.game_objects import Deck, Game, TheCoin, Hero, Minion, MinionCard
-from tests.agents.trade.test_helpers import TestHelpers
-from hearthbreaker.deck_order import DeckOrder
+from tests.agents.trade.test_helpers import TestHelpers, TempCard
+from tests.agents.trade.deck_order import DeckOrder
 from hearthbreaker.agents.trade.trade import Trades
 from hearthbreaker.agents.trade.possible_play import PossiblePlays
 from tests.agents.trade.test_case_mixin import TestCaseMixin
-import re
+
 
 class TestTradeAgentAttackBasicTests(TestCaseMixin,unittest.TestCase):
     def test_will_attack_face(self):
@@ -80,8 +80,8 @@ class TestTradeAgentAttackBasicTests(TestCaseMixin,unittest.TestCase):
 
 class TestTradeAgentAttackTradesTests(TestCaseMixin,unittest.TestCase):
     def test_trades_smart(self):
-        me = [MagmaRager()]
-        opp = [Wisp(),ChillwindYeti()]
+        me = self.make_cards(MagmaRager())
+        opp = self.make_cards(Wisp(),ChillwindYeti())
 
         trades = self.make_trades(me,opp)
         #for t in trades.trades(): print(t)
@@ -90,8 +90,8 @@ class TestTradeAgentAttackTradesTests(TestCaseMixin,unittest.TestCase):
         self.assertEqual(trades.trades()[0].opp_minion.name,"Chillwind Yeti")
 
     def test_trades_smart2(self):
-        me = [VoidWalker()]
-        opp = [Wisp(),ChillwindYeti()]
+        me = self.make_cards(VoidWalker())
+        opp = self.make_cards(Wisp(),ChillwindYeti())
 
         trades = self.make_trades(me,opp)
 
@@ -106,29 +106,6 @@ class TestTradeAgentAttackTradesTests(TestCaseMixin,unittest.TestCase):
 
         self.assertEqual(len(trades.trades()),2)
         self.assertEqual(trades.trades()[0].opp_minion.__class__,Hero)
-
-class TempCard:
-    def __init__(self,base_attack,health,name="",taunt=False):
-        self.base_attack = base_attack
-        self.health = health
-        self.name = name
-        self.taunt = taunt
-
-    def create_minion(self,player):
-        return Minion(self.base_attack,self.health,taunt=self.taunt)
-
-    def create_minion_named(self,player):
-        return self.create_minion(player)
-
-    @staticmethod
-    def make(str):
-        taunt = False
-        a,h = str.split("/")
-        g = re.search("(\d+)t$",h)
-        if g:
-            taunt = True
-            h = g.group(1)
-        return TempCard(int(a),int(h),taunt=taunt,name=str)
 
 class TestTempCard(unittest.TestCase):
     def test_make(self):

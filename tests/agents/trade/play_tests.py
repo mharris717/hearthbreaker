@@ -10,7 +10,7 @@ from hearthbreaker.cards import GoldshireFootman, MurlocRaider, BloodfenRaptor, 
 from hearthbreaker.constants import CHARACTER_CLASS
 from hearthbreaker.game_objects import Deck, Game, TheCoin, Hero
 from tests.agents.trade.test_helpers import TestHelpers
-from hearthbreaker.deck_order import DeckOrder
+from tests.agents.trade.deck_order import DeckOrder
 from hearthbreaker.agents.trade.trade import Trades
 from hearthbreaker.agents.trade.possible_play import PossiblePlays
 from tests.agents.trade.test_case_mixin import TestCaseMixin
@@ -22,14 +22,14 @@ class TestTradeAgentPlayTests(TestCaseMixin,unittest.TestCase):
                 cards = DeckOrder("Argent Squire","Harvest Golem","Doomguard","Dire Wolf Alpha","Doomguard","Dark Iron Dwarf","Dark Iron Dwarf").sorted(player.deck.cards)
                 player.deck.cards = cards
 
-        game = TestHelpers().make_game(cb)
+        game = TestHelpers().make_game()
 
-        self.assertEqual(game.players[0].agent.name,"TRAD")
+        #self.assertEqual(game.players[0].agent.name,"TRAD")
+
+        self.set_hand(game,0,ArgentSquire(),DireWolfAlpha(),HarvestGolem())
 
         game.play_single_turn()
 
-        names = [m.name for m in game.players[0].hand]
-        #print(names)
         self.assert_minions(game.players[0],"Argent Squire")
 
         game.play_single_turn()
@@ -40,7 +40,7 @@ class TestTradeAgentPlayTests(TestCaseMixin,unittest.TestCase):
     def test_will_play_biggest(self):
         game = TestHelpers().make_game()
 
-        game.players[0].hand = [ArgentSquire(),ArgentSquire(),DireWolfAlpha()]
+        game.players[0].hand = self.make_cards(ArgentSquire(),ArgentSquire(),DireWolfAlpha())
         game.players[0].mana = 1
         game.players[0].max_mana = 1
 
@@ -51,7 +51,7 @@ class TestTradeAgentPlayTests(TestCaseMixin,unittest.TestCase):
     def test_will_play_multiple(self):
         game = TestHelpers().make_game()
 
-        game.players[0].hand = [ArgentSquire(),ArgentSquire(),ArgentSquire()]
+        game.players[0].hand = self.make_cards(ArgentSquire(),ArgentSquire(),ArgentSquire())
         game.players[0].mana = 1
         game.players[0].max_mana = 1
 
@@ -62,7 +62,7 @@ class TestTradeAgentPlayTests(TestCaseMixin,unittest.TestCase):
     def test_will_play_multiple_correct_order(self):
         game = TestHelpers().make_game()
 
-        game.players[0].hand = [ArgentSquire(),ArgentSquire(),ArgentSquire(),HarvestGolem()]
+        game.players[0].hand = self.make_cards(ArgentSquire(),ArgentSquire(),ArgentSquire(),HarvestGolem())
         game.players[0].mana = 3
         game.players[0].max_mana = 3
 
@@ -73,7 +73,7 @@ class TestTradeAgentPlayTests(TestCaseMixin,unittest.TestCase):
     def test_will_use_entire_pool(self):
         game = TestHelpers().make_game()
 
-        game.players[0].hand = [DireWolfAlpha(),DireWolfAlpha(),DireWolfAlpha(),HarvestGolem()]
+        game.players[0].hand = self.make_cards(DireWolfAlpha(),DireWolfAlpha(),DireWolfAlpha(),HarvestGolem())
         game.players[0].mana = 3
         game.players[0].max_mana = 3
 
@@ -83,14 +83,14 @@ class TestTradeAgentPlayTests(TestCaseMixin,unittest.TestCase):
 
 class TestTradeAgentPlayCoinTests(TestCaseMixin,unittest.TestCase):
     def test_coin(self):
-        cards = [ArgentSquire(),BloodfenRaptor(),TheCoin()]
+        cards = self.make_cards(ArgentSquire(),BloodfenRaptor(),TheCoin())
         possible_plays = PossiblePlays(cards,1)
         play = possible_plays.plays()[0]
         names = [c.name for c in play.cards]
         self.assertEqual(names,["The Coin","Bloodfen Raptor"])
 
     def test_coin_save(self):
-        cards = [ArgentSquire(),MagmaRager(),TheCoin()]
+        cards = self.make_cards(ArgentSquire(),MagmaRager(),TheCoin())
         possible_plays = PossiblePlays(cards,1)
         play = possible_plays.plays()[0]
         names = [c.name for c in play.cards]

@@ -8,7 +8,6 @@ from hearthbreaker.cards import *
 from hearthbreaker.constants import CHARACTER_CLASS
 from hearthbreaker.game_objects import Game, card_lookup, Deck
 from hearthbreaker.ui.game_printer import GameRender
-from hearthbreaker.agents.trade_agent import TradeAgent
 
 
 def load_deck(filename):
@@ -347,7 +346,7 @@ def render_game(stdscr):
 
     deck1 = load_deck(sys.argv[1])
     deck2 = load_deck(sys.argv[2])
-    game = Game([deck1, deck2], [TextAgent(stdscr, prompt_window, text_window), TradeAgent()])
+    game = Game([deck1, deck2], [TextAgent(stdscr, prompt_window, text_window), RandomAgent()])
     if isinstance(game.players[0].agent, TextAgent):
         renderer = GameRender(stdscr, game, game.players[0])
     else:

@@ -72,7 +72,7 @@ class Trade:
         return round(res,2)
 
     def minion_desc(self,minion):
-        return "{}/{}".format(minion.base_attack,minion.health)
+        return "{} {}/{}".format(minion.try_name(),minion.base_attack,minion.health)
 
     def __str__(self):
         return "Trade {} for {} Value {}".format(self.minion_desc(self.my_minion),self.minion_desc(self.opp_minion),self.value())
@@ -277,8 +277,10 @@ class AttackMixin:
     def attack_once(self,player):
         attack_minions = self.attack_minions(player)
         trades = self.trades(player)
+        #print("trades {}".format(len(trades)))
         if len(trades) > 0:
             self.current_trade = trades[0]
+            #print("Trade: {}".format(self.current_trade))
             self.current_trade.my_minion.attack()
 
     def attack(self,player):

@@ -10,7 +10,7 @@ from hearthbreaker.cards import GoldshireFootman, MurlocRaider, BloodfenRaptor, 
 from hearthbreaker.constants import CHARACTER_CLASS
 from hearthbreaker.game_objects import Deck, Game, TheCoin, Hero
 from tests.agents.trade.test_helpers import TestHelpers
-from hearthbreaker.deck_order import DeckOrder
+from tests.agents.trade.deck_order import DeckOrder
 from hearthbreaker.agents.trade.trade import Trades
 from hearthbreaker.agents.trade.possible_play import PossiblePlays
 from tests.agents.trade.test_case_mixin import TestCaseMixin
@@ -38,20 +38,6 @@ class TestTradeAgent(TestCaseMixin,unittest.TestCase):
 
         self.assert_minions(game.players[1],"War Golem")
         self.assert_minions(game.players[0],"Bloodfen Raptor")
-
-    def test_draw_setup(self):
-        game = TestHelpers().make_game()
-
-        player = game.players[0]
-        cards = DeckOrder("Argent Squire","Doomguard","Dire Wolf Alpha","Argent Squire").sorted(player.deck.cards)
-        self.assertEqual(cards[0].name,"Argent Squire")
-        self.assertEqual(cards[1].name,"Doomguard")
-        self.assertEqual(cards[2].name,"Dire Wolf Alpha")
-        self.assertEqual(cards[3].name,"Argent Squire")
-
-        #print(player.deck.cards[0])
-        #foot = [m for m in filter(lambda minion: minion.name == Shieldbearer().name, player.deck.cards)]
-        #self.assertEqual(len(foot),2)
 
     def test_buff_target(self):
         game = TestHelpers().make_game()

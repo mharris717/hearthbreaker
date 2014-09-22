@@ -2,7 +2,7 @@ from hearthbreaker.agents.basic_agents import RandomAgent
 from hearthbreaker.agents.trade.possible_play import PossiblePlays,PlayMixin
 from hearthbreaker.agents.trade.trade import Trade,TradeMixin,AttackMixin
 from hearthbreaker.game_objects import Hero
-from hearthbreaker.util import Util
+from hearthbreaker.agents.trade.util import Util
 
 class ChooseTargetMixin:
     def gdfgdfggdfgdf(self):

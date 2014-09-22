@@ -5,7 +5,6 @@ import abc
 import hearthbreaker.powers
 import hearthbreaker.targeting
 import hearthbreaker.constants
-from hearthbreaker.util import Util
 
 card_table = {}
 
@@ -757,7 +756,6 @@ class MinionCard(Card, metaclass=abc.ABCMeta):
             raise GameException("Only 7 minions allowed on the field at a time")
         super().use(player, game)
         minion = self.create_minion(player)
-        minion.name = self.name
         minion.card = self
         minion.player = player
         minion.game = game
@@ -795,7 +793,6 @@ class MinionCard(Card, metaclass=abc.ABCMeta):
         """
         if len(player.minions) < 7:
             minion = self.create_minion(player)
-            minion.name = self.name
             minion.card = self
             minion.player = player
             minion.game = game
@@ -829,11 +826,6 @@ class MinionCard(Card, metaclass=abc.ABCMeta):
         :rtype: boolean
         """
         return False
-
-    def create_minion_named(self,player):
-        res = self.create_minion(player)
-        res.name = self.name
-        return res
 
 
 class SecretCard(Card, metaclass=abc.ABCMeta):
@@ -890,9 +882,6 @@ class Minion(Character):
         else:
             self._effects_to_add = []
         self.bind("did_damage", self.__on_did_damage)
-
-    def desc(self):
-        return "{} {}/{}".format(self.name,self.base_attack,self.health)
 
     def __on_did_damage(self, amount, target):
         self.stealth = False
@@ -1275,14 +1264,13 @@ class Weapon(Bindable):
 
 
 class Deck:
-    def __init__(self, cards, character_class, use_random=True):
+    def __init__(self, cards, character_class):
         if len(cards) != 30:
             raise GameException("Deck must have exactly 30 cards in it")
         self.cards = cards
         self.character_class = character_class
         self.used = [False] * 30
         self.left = 30
-        self.use_random = use_random
 
     def copy(self):
         return copy.deepcopy(self)
@@ -1290,24 +1278,7 @@ class Deck:
     def can_draw(self):
         return self.left > 0
 
-    def draw_ordered(self):
-        if not self.can_draw():
-            raise GameException("Cannot draw more than 30 cards")
-
-        index = 0
-        count = 0
-        i = 0
-        while count <= index:
-            if not self.used[i]:
-                count += 1
-            i += 1
-
-        self.used[i - 1] = True
-        self.left -= 1
-        return self.cards[i - 1]
-
-
-    def draw_random(self, random_func):
+    def draw(self, random_func):
         if not self.can_draw():
             raise GameException("Cannot draw more than 30 cards")
 
@@ -1322,13 +1293,6 @@ class Deck:
         self.used[i - 1] = True
         self.left -= 1
         return self.cards[i - 1]
-
-    def draw(self,random_func):
-        if self.use_random:
-            return self.draw_random(random_func)
-        else:
-            return self.draw_ordered()
-
 
     def put_back(self, card):
         for index in range(0, 30):
@@ -1441,6 +1405,8 @@ class Player(Bindable):
         return copied_player
 
     def draw(self):
+        #if Player.no_draw: return
+
         if self.can_draw():
             card = self.deck.draw(self.random)
             self.trigger("card_drawn", card)
@@ -1449,6 +1415,7 @@ class Player(Bindable):
             else:
                 self.trigger("card_destroyed", card)
         else:
+            if hasattr(self.deck,"is_fake_deck"): return
             self.fatigue += 1
             self.hero.trigger("fatigue_damage", self.fatigue)
             self.hero.damage(self.fatigue, None)
@@ -1485,9 +1452,10 @@ class Player(Bindable):
     def choose_target(self, targets):
         return self.agent.choose_target(targets)
 
+Player.no_draw = False
 
 class Game(Bindable):
-    def __init__(self, decks, agents, random_func=random.randint,before_draw_callback=None):
+    def __init__(self, decks, agents, random_func=random.randint):
         super().__init__()
         self.delayed_minions = set()
         self.random = random_func
@@ -1504,10 +1472,6 @@ class Game(Bindable):
         self.other_player.opponent = self.current_player
         self.game_ended = False
         self.minion_counter = 0
-
-        if before_draw_callback:
-            before_draw_callback(self)
-            
         for i in range(0, 3):
             self.players[0].draw()
 

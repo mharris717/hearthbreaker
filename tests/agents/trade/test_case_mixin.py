@@ -8,17 +8,24 @@ from hearthbreaker.cards import GoldshireFootman, MurlocRaider, BloodfenRaptor, 
     VoidWalker, HarvestGolem, KnifeJuggler, ShatteredSunCleric, ArgentSquire, Doomguard, Soulfire, DefenderOfArgus, \
     AbusiveSergeant, NerubianEgg, KeeperOfTheGrove, Wisp, Deathwing, NatPagle, AmaniBerserker
 from hearthbreaker.constants import CHARACTER_CLASS
-from hearthbreaker.game_objects import Deck, Game, TheCoin, Hero
+from hearthbreaker.game_objects import Deck, Game, TheCoin, Hero, Player
 from tests.agents.trade.test_helpers import TestHelpers
-from hearthbreaker.deck_order import DeckOrder
+from tests.agents.trade.deck_order import DeckOrder
 from hearthbreaker.agents.trade.trade import Trades
 from hearthbreaker.agents.trade.possible_play import PossiblePlays
+from tests.agents.trade.test_helpers import CardWrapper
 
 class TestCaseMixin:
     def setUp(self):
+        Player.no_draw = True
+        TestHelpers.fix_create_minion()
         random.seed(1857)
+    def tearDown(self):
+        Player.no_draw = False
 
     def add_minions(self,game,player_index,*minions):
+        minions = [CardWrapper(c) for c in minions]
+        #raise Exception(minions[0].create_minion(None).name)
         player = game.players[player_index]
         for minion in minions:
             minion.use(player,game)
@@ -30,11 +37,11 @@ class TestCaseMixin:
                 minion.exhausted = False
 
     def assert_minions(self,player,*names):
-        actual = [m.name for m in player.minions]
+        actual = self.card_names(player.minions)
         self.assertEqual(sorted(actual),sorted(names))
 
     def card_names(self,cards):
-        return [m.name for m in cards]
+        return [m.try_name() for m in cards]
 
     def player_str(self,player):
         res = []
@@ -50,8 +57,8 @@ class TestCaseMixin:
         return str.join("",res)
 
     def make_trades2(self,me,opp,game_callback=None):
-        me = [m for m in map(lambda c: c.create_minion_named(None),me)]
-        opp = [m for m in map(lambda c: c.create_minion_named(None),opp)]
+        me = [m for m in map(lambda c: CardWrapper(c).create_minion(42),me)]
+        opp = [m for m in map(lambda c: CardWrapper(c).create_minion(42),opp)]
 
         game = TestHelpers().make_game()
         if game_callback:
@@ -63,3 +70,10 @@ class TestCaseMixin:
 
     def make_trades(self,me,opp):
         return self.make_trades2(me,opp)[1]
+
+    def make_cards(self,*cards):
+        return [CardWrapper(c) for c in cards]
+
+    def set_hand(self,game,player_index,*cards):
+        cards = self.make_cards(*cards)
+        game.players[player_index].hand = cards
