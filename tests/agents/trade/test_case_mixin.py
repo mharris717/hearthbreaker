@@ -10,7 +10,6 @@ from hearthbreaker.cards import GoldshireFootman, MurlocRaider, BloodfenRaptor, 
 from hearthbreaker.constants import CHARACTER_CLASS
 from hearthbreaker.game_objects import Deck, Game, TheCoin, Hero, Player
 from tests.agents.trade.test_helpers import TestHelpers
-from tests.agents.trade.deck_order import DeckOrder
 from hearthbreaker.agents.trade.trade import Trades
 from hearthbreaker.agents.trade.possible_play import PossiblePlays
 

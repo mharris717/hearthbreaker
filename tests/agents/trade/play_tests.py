@@ -10,21 +10,13 @@ from hearthbreaker.cards import GoldshireFootman, MurlocRaider, BloodfenRaptor, 
 from hearthbreaker.constants import CHARACTER_CLASS
 from hearthbreaker.game_objects import Deck, Game, TheCoin, Hero
 from tests.agents.trade.test_helpers import TestHelpers
-from tests.agents.trade.deck_order import DeckOrder
 from hearthbreaker.agents.trade.trade import Trades
 from hearthbreaker.agents.trade.possible_play import PossiblePlays
 from tests.agents.trade.test_case_mixin import TestCaseMixin
 
 class TestTradeAgentPlayTests(TestCaseMixin,unittest.TestCase):
     def test_simple_plays(self):
-        def cb(game):
-            for player in game.players:
-                cards = DeckOrder("Argent Squire","Harvest Golem","Doomguard","Dire Wolf Alpha","Doomguard","Dark Iron Dwarf","Dark Iron Dwarf").sorted(player.deck.cards)
-                player.deck.cards = cards
-
         game = TestHelpers().make_game()
-
-        #self.assertEqual(game.players[0].agent.name,"TRAD")
 
         self.set_hand(game,0,ArgentSquire(),DireWolfAlpha(),HarvestGolem())
 

@@ -9,7 +9,6 @@ from hearthbreaker.cards import GoldshireFootman, MurlocRaider, BloodfenRaptor, 
     AbusiveSergeant, NerubianEgg, KeeperOfTheGrove
 from hearthbreaker.constants import CHARACTER_CLASS
 from hearthbreaker.game_objects import Deck, Game, MinionCard, Minion, TheCoin, Player, Bindable
-from tests.agents.trade.deck_order import DeckOrder
 import re
 
 def t(self):
