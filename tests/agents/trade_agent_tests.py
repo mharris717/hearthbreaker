@@ -3,10 +3,6 @@ from hearthbreaker.cards import Wisp, WarGolem, BloodfenRaptor, RiverCrocolisk, 
 from tests.agents.trade.test_helpers import TestHelpers
 from tests.agents.trade.test_case_mixin import TestCaseMixin
 from hearthbreaker.agents.trade.possible_play import PossiblePlays
-from tests.agents.trade.play_tests import TestTradeAgentPlayTests, TestTradeAgentPlayCoinTests
-from tests.agents.trade.attack_tests import TestTradeAgentAttackBasicTests, \
-    TestTradeAgentAttackTradesTests, \
-    TestTradeAgentAttackLethalTests
 
 
 class TestTradeAgent(TestCaseMixin, unittest.TestCase):
@@ -45,9 +41,3 @@ class TestTradeAgent(TestCaseMixin, unittest.TestCase):
         possible_plays = PossiblePlays(cards, 10, allow_hero_power=True)
 
         self.assertEqual(1, len(possible_plays.plays()))
-
-
-class TestSubs(TestTradeAgentPlayTests, TestTradeAgentPlayCoinTests, TestTradeAgentAttackBasicTests,
-               TestTradeAgentAttackTradesTests, TestTradeAgentAttackLethalTests):
-    def test_more(self):
-        self.assertEqual(2, 2)
