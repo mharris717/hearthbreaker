@@ -90,10 +90,13 @@ class TestHelpers:
 
             cls.create_minion = create_minion_named_gen
 
+    def list_copy(self,list):
+        return [c for c in list]
+
     def make_game(self, before_draw_callback=None):
         cs = [WarGolem() for i in range(0, 30)]
-        deck1 = Deck(cs.copy(), CHARACTER_CLASS.DRUID)
-        deck2 = Deck(cs.copy(), CHARACTER_CLASS.WARLOCK)
+        deck1 = Deck(self.list_copy(cs), CHARACTER_CLASS.DRUID)
+        deck2 = Deck(self.list_copy(cs), CHARACTER_CLASS.WARLOCK)
 
         trade = TradeAgent()
         r = RandomAgent()

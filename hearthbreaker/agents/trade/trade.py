@@ -186,8 +186,8 @@ class FaceTrade(Trade):
 class Trades:
     def __init__(self, player, attack_minions, opp_minions, opp_hero):
         self.player = player
-        self.attack_minions = attack_minions.copy()
-        self.opp_minions = opp_minions.copy()
+        self.attack_minions = attack_minions[0:99999]
+        self.opp_minions = opp_minions[0:99999]
         self.opp_hero = opp_hero
 
     def opp_has_taunt(self):

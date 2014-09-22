@@ -130,7 +130,7 @@ class PossiblePlays(CoinPlays):
             return [[]]
 
         for card in possible:
-            rest = self.cards.copy()
+            rest = self.cards[0:99999]
 
             if card.name == 'Hero Power':
                 f_plays = PossiblePlays(rest,
