@@ -73,7 +73,6 @@ class CardTest(unittest.TestCase):
         file.close()
 
     def test_play_with_one_card(self):
-            return
             file = open("cards.csv", "r")
             reader = csv.DictReader(file)
             for row in reader:

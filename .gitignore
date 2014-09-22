@@ -4,6 +4,3 @@
 .coverage
 htmlcov
 _build
-bin
-include
-.Python
