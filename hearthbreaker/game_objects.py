@@ -1413,7 +1413,6 @@ class Player(Bindable):
             else:
                 self.trigger("card_destroyed", card)
         else:
-            if hasattr(self.deck,"is_fake_deck"): return
             self.fatigue += 1
             self.hero.trigger("fatigue_damage", self.fatigue)
             self.hero.damage(self.fatigue, None)
@@ -1449,6 +1448,7 @@ class Player(Bindable):
 
     def choose_target(self, targets):
         return self.agent.choose_target(targets)
+
 
 class Game(Bindable):
     def __init__(self, decks, agents, random_func=random.randint):
