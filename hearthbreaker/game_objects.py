@@ -1405,8 +1405,6 @@ class Player(Bindable):
         return copied_player
 
     def draw(self):
-        #if Player.no_draw: return
-
         if self.can_draw():
             card = self.deck.draw(self.random)
             self.trigger("card_drawn", card)
@@ -1451,8 +1449,6 @@ class Player(Bindable):
 
     def choose_target(self, targets):
         return self.agent.choose_target(targets)
-
-Player.no_draw = False
 
 class Game(Bindable):
     def __init__(self, decks, agents, random_func=random.randint):

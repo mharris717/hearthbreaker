@@ -13,19 +13,13 @@ from tests.agents.trade.test_helpers import TestHelpers
 from tests.agents.trade.deck_order import DeckOrder
 from hearthbreaker.agents.trade.trade import Trades
 from hearthbreaker.agents.trade.possible_play import PossiblePlays
-from tests.agents.trade.test_helpers import CardWrapper
 
 class TestCaseMixin:
     def setUp(self):
-        Player.no_draw = True
         TestHelpers.fix_create_minion()
         random.seed(1857)
-    def tearDown(self):
-        Player.no_draw = False
 
     def add_minions(self,game,player_index,*minions):
-        minions = [CardWrapper(c) for c in minions]
-        #raise Exception(minions[0].create_minion(None).name)
         player = game.players[player_index]
         for minion in minions:
             minion.use(player,game)
@@ -57,10 +51,10 @@ class TestCaseMixin:
         return str.join("",res)
 
     def make_trades2(self,me,opp,game_callback=None):
-        me = [m for m in map(lambda c: CardWrapper(c).create_minion(42),me)]
-        opp = [m for m in map(lambda c: CardWrapper(c).create_minion(42),opp)]
+        me = [m for m in map(lambda c: c.create_minion(None),me)]
+        opp = [m for m in map(lambda c: c.create_minion(None),opp)]
 
-        game = TestHelpers().make_game()
+        game = self.make_game()
         if game_callback:
             game_callback(game)
             
@@ -72,7 +66,10 @@ class TestCaseMixin:
         return self.make_trades2(me,opp)[1]
 
     def make_cards(self,*cards):
-        return [CardWrapper(c) for c in cards]
+        return [c for c in cards]
+
+    def make_game(self):
+        return TestHelpers().make_game()
 
     def set_hand(self,game,player_index,*cards):
         cards = self.make_cards(*cards)
