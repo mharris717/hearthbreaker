@@ -1,5 +1,6 @@
 import unittest
-from hearthbreaker.cards import ArgentSquire, DireWolfAlpha, HarvestGolem, BloodfenRaptor, MagmaRager, Wisp, Ysera
+from hearthbreaker.cards import ArgentSquire, DireWolfAlpha, HarvestGolem, BloodfenRaptor, MagmaRager, \
+    Wisp, WarGolem, AbusiveSergeant
 from hearthbreaker.game_objects import TheCoin
 from tests.agents.trade.test_helpers import TestHelpers
 from hearthbreaker.agents.trade.possible_play import PossiblePlays
@@ -75,6 +76,12 @@ class TestTradeAgentPlayTests(TestCaseMixin, unittest.TestCase):
 
         self.assert_minions(game.players[0], "Wisp", "Argent Squire", "Dire Wolf Alpha")
 
+    def test_will_save_buffs_if_no_target(self):
+        cards = [ArgentSquire(), AbusiveSergeant()]
+        possible = PossiblePlays(cards, 1)
+        played_card = possible.plays()[0].first_card()
+        self.assertEqual(played_card.name, "Argent Squire")
+
 
 class TestTradeAgentPlayCoinTests(TestCaseMixin, unittest.TestCase):
     def test_coin(self):
@@ -123,6 +130,6 @@ class TestTradeAgentHeroPowerTests(TestCaseMixin, unittest.TestCase):
         self.assertEqual(play.first_card().name, "Hero Power")
 
     def test_will_not_hero_power_if_not_inevitable(self):
-        possible = PossiblePlays([Ysera()], 10)
+        possible = PossiblePlays([WarGolem()], 8)
         play = possible.plays()[0]
-        self.assertEqual(play.first_card().name, "Ysera")
+        self.assertEqual(play.first_card().name, "War Golem")

@@ -1,14 +1,16 @@
 from hearthbreaker.agents.trade.util import Util
 from functools import reduce
+from hearthbreaker.agents.trade.battlecry_type import BattlecryType
 
 
 class PossiblePlay:
-    def __init__(self, cards, available_mana):
+    def __init__(self, cards, available_mana, my_played_minions=[]):
         if len(cards) == 0:
             raise Exception("PossiblePlay cards is empty")
 
         self.cards = cards
         self.available_mana = available_mana
+        self.my_played_minions = my_played_minions
 
     def card_mana(self):
         def eff_mana(card):
@@ -24,6 +26,17 @@ class PossiblePlay:
 
     def wasted(self):
         return self.available_mana - self.card_mana()
+
+    def bcry_value(self, card):
+        cry_type = BattlecryType.target_type_for_card(card)
+        if cry_type == "Friendly":
+            targets = self.my_played_minions
+            if len(targets) > 0:
+                return 100000
+            else:
+                return -100000
+        else:
+            return 0
 
     def value(self):
         res = self.card_mana()
@@ -42,7 +55,12 @@ class PossiblePlay:
             res -= 10000000000000000
 
         if any(map(lambda c: c.name == "The Coin", self.cards)):
-            res -= 100
+            res -= 10000
+
+        res += self.bcry_value(self.cards[0])
+
+        res -= (ord(self.cards[0].name[0:1]) - 75) * 26
+        res -= (ord(self.cards[0].name[1:2]) - 75)
 
         return res
 
@@ -120,6 +138,7 @@ class PossiblePlays(CoinPlays):
         self.cards = cards
         self.mana = mana
         self.allow_hero_power = allow_hero_power
+        self.my_played_minions = []
 
     def possible_is_pointless_coin(self, possible):
         if len(possible) != 1 or possible[0].name != "The Coin":
@@ -165,7 +184,8 @@ class PossiblePlays(CoinPlays):
         return res
 
     def plays_inner(self):
-        res = [PossiblePlay(raw, self.mana) for raw in self.raw_plays() if len(raw) > 0]
+        res = [PossiblePlay(raw, self.mana, my_played_minions=self.my_played_minions)
+               for raw in self.raw_plays() if len(raw) > 0]
         res = sorted(res, key=PossiblePlay.value)
         res.reverse()
 
